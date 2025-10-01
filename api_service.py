@@ -1,58 +1,28 @@
-# api_service.py
-import requests
-import streamlit as st
+import json
+import os
+from datetime import datetime, timedelta
 
-API_KEY = st.secrets["PETFINDER_CLIENT_ID"]
-API_SECRET = st.secrets["PETFINDER_CLIENT_SECRET"]
+CACHE_FILE = "dogs_cache.json"
+CACHE_DURATION = timedelta(hours=1)
 
-TOKEN_URL = "https://api.petfinder.com/v2/oauth2/token"
-ANIMALS_URL = "https://api.petfinder.com/v2/animals"
+def save_cache(data):
+    with open(CACHE_FILE, 'w') as f:
+        json.dump({"timestamp": datetime.now().isoformat(), "data": data}, f)
 
+def load_cache():
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, 'r') as f:
+            cache = json.load(f)
+            cache_time = datetime.fromisoformat(cache["timestamp"])
+            if datetime.now() - cache_time < CACHE_DURATION:
+                return cache["data"]
+    return None
 
-def get_token():
-    """Get an access token from Petfinder API."""
-    data = {
-        "grant_type": "client_credentials",
-        "client_id": API_KEY,
-        "client_secret": API_SECRET,
-    }
-    r = requests.post(TOKEN_URL, data=data)
-    if r.status_code != 200:
-        st.error(f"Failed to get token: {r.status_code} {r.text}")
-        return None
-    return r.json().get("access_token")
-
-
-def fetch_dogs(token, location="85004", limit=10):
-    """Fetch adoptable dogs from Petfinder and normalize results."""
-    headers = {"Authorization": f"Bearer {token}"}
-    params = {"type": "Dog", "location": location, "limit": limit}
-
-    r = requests.get(ANIMALS_URL, headers=headers, params=params)
-    if r.status_code != 200:
-        st.error(f"Failed to fetch dogs: {r.status_code} {r.text}")
-        return []
-
-    animals = r.json().get("animals", [])
-
-    # Normalize each dog into a flat dict
-    dogs = []
-    for a in animals:
-        dogs.append(
-            {
-                "id": a.get("id"),
-                "name": a.get("name", "Unknown"),
-                "age": a.get("age", "Unknown"),
-                "gender": a.get("gender", "Unknown"),
-                "breed": a.get("breeds", {}).get("primary", "Unknown"),
-                "description": a.get("description", "No description available."),
-                "photo": (
-                    a.get("photos")[0]["medium"]
-                    if a.get("photos")
-                    else "https://via.placeholder.com/350x350.png?text=No+Image"
-                ),
-                "url": a.get("url", "#"),
-            }
-        )
-
+# In fetch_dogs(), check cache first:
+def fetch_dogs(token, location, limit=10):
+    cached = load_cache()
+    if cached:
+        return cached
+    # ... existing API call code ...
+    save_cache(dogs)
     return dogs
