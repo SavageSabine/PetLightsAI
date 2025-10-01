@@ -1,8 +1,8 @@
 import requests
 import streamlit as st
 
-API_KEY = st.secrets["petfinder"]["client_id"]
-API_SECRET = st.secrets["petfinder"]["client_secret"]
+API_KEY = st.secrets["PETFINDER_CLIENT_ID"]
+API_SECRET = st.secrets["PETFINDER_CLIENT_SECRET"]
 
 def get_token():
     url = "https://api.petfinder.com/v2/oauth2/token"
