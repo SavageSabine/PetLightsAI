@@ -1,10 +1,9 @@
-# api_service.py
 import requests
+import streamlit as st
 
-API_KEY = "your_client_id"
-API_SECRET = "your_client_secret"
+API_KEY = st.secrets["petfinder"]["client_id"]
+API_SECRET = st.secrets["petfinder"]["client_secret"]
 
-# get token
 def get_token():
     url = "https://api.petfinder.com/v2/oauth2/token"
     data = {
@@ -13,11 +12,9 @@ def get_token():
         "client_secret": API_SECRET
     }
     r = requests.post(url, data=data)
-    return r.json()["access_token"]
 
-# get adoptable dogs
-def get_dogs(token, limit=10):
-    url = f"https://api.petfinder.com/v2/animals?type=dog&limit={limit}"
-    headers = {"Authorization": f"Bearer {token}"}
-    r = requests.get(url, headers=headers)
-    return r.json()["animals"]
+    if r.status_code != 200:
+        st.error(f"Failed to get token: {r.status_code} {r.text}")
+        return None
+    
+    return r.json().get("access_token")
