@@ -1,24 +1,13 @@
 import streamlit as st
 
 
-from api_service import get_token, get_dogs
 
-# Fetch real dogs
-if "dogs" not in st.session_state:
-    token = get_token()
-    st.session_state.dogs = get_dogs(token, limit=10)
+from api_service import get_token
 
-dogs = st.session_state.dogs
-dog = dogs[st.session_state.dog_index]
+token = get_token()
+if token is None:
+    st.stop()  # Stop the app if auth failed
 
-
-# --- Track state ---
-if "dog_index" not in st.session_state:
-    st.session_state.dog_index = 0
-if "choices" not in st.session_state:
-    st.session_state.choices = {}
-
-dog = dogs[st.session_state.dog_index]
 
 # --- UI Layout ---
 st.set_page_config(page_title="Pet Lights AI", page_icon="🐶", layout="centered")
