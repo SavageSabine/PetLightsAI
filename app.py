@@ -3,7 +3,6 @@ import streamlit as st
 from api_service import get_token, fetch_dogs
 
 st.set_page_config(page_title="PetLights AI", page_icon="🐶", layout="centered")
-
 st.title("🐾 PetLights AI - Find Your Perfect Dog")
 
 # --- Session state setup ---
@@ -20,8 +19,11 @@ if not st.session_state.dogs:
     if token:
         st.session_state.dogs = fetch_dogs(token, location="85004", limit=10)
 
-# --- Navigation functions ---
-def next_dog():
+# --- Ranking and navigation ---
+def rank_dog(choice):
+    dog_id = st.session_state.dogs[st.session_state.index]["id"]
+    st.session_state.rankings[dog_id] = choice
+    # Only increment if not at the last dog
     if st.session_state.index < len(st.session_state.dogs) - 1:
         st.session_state.index += 1
 
@@ -29,11 +31,9 @@ def prev_dog():
     if st.session_state.index > 0:
         st.session_state.index -= 1
 
-def rank_dog(choice):
-    """Record choice for current dog, then move to next."""
-    current_dog = st.session_state.dogs[st.session_state.index]
-    st.session_state.rankings[current_dog["id"]] = choice
-    next_dog()
+def next_dog():
+    if st.session_state.index < len(st.session_state.dogs) - 1:
+        st.session_state.index += 1
 
 # --- Display current dog ---
 if st.session_state.dogs:
@@ -47,36 +47,35 @@ if st.session_state.dogs:
     st.write(dog["description"])
     st.markdown(f"[View on Petfinder →]({dog['url']})")
 
-    # Ranking buttons
+    # Ranking buttons with unique keys
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("❌ No", key=f"no_{st.session_state.index}", use_container_width=True):
+        if st.button("❌ No", key=f"no_{st.session_state.index}"):
             rank_dog("no")
     with col2:
-        if st.button("🤔 Maybe", key=f"maybe_{st.session_state.index}", use_container_width=True):
+        if st.button("🤔 Maybe", key=f"maybe_{st.session_state.index}"):
             rank_dog("maybe")
     with col3:
-        if st.button("✅ Yes", key=f"yes_{st.session_state.index}", use_container_width=True):
+        if st.button("✅ Yes", key=f"yes_{st.session_state.index}"):
             rank_dog("yes")
 
     # Navigation arrows
     col_left, col_mid, col_right = st.columns([1, 4, 1])
     with col_left:
-        if st.button("⬅️ Prev", key=f"prev_{st.session_state.index}"):
+        if st.button("⬅️ Prev", key="prev"):
             prev_dog()
     with col_right:
-        if st.button("➡️ Next", key=f"next_{st.session_state.index}"):
+        if st.button("➡️ Next", key="next"):
             next_dog()
 
-    st.write(f"Viewing dog {st.session_state.index+1} of {len(st.session_state.dogs)}")
+    st.write(f"Viewing dog {st.session_state.index + 1} of {len(st.session_state.dogs)}")
 
 else:
     st.warning("No dogs found. Try refreshing or check your API credentials.")
 
-# --- Saved rankings section (sidebar) ---
+# --- Saved rankings section ---
 st.sidebar.header("📋 Your Choices")
 if st.session_state.rankings:
-    # Display only dogs that already have a ranking
     for dog_id, choice in st.session_state.rankings.items():
         dog = next(d for d in st.session_state.dogs if d["id"] == dog_id)
         st.sidebar.write(f"{dog['name']} → {choice}")
