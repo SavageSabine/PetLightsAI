@@ -12,6 +12,8 @@ if "index" not in st.session_state:
     st.session_state.index = 0
 if "rankings" not in st.session_state:
     st.session_state.rankings = {}  # {dog_id: "yes/maybe/no"}
+if "pending_choice" not in st.session_state:
+    st.session_state.pending_choice = None  # Store choice temporarily
 
 # --- Load dogs ---
 if not st.session_state.dogs:
@@ -20,10 +22,15 @@ if not st.session_state.dogs:
         st.session_state.dogs = fetch_dogs(token, location="85004", limit=10)
 
 # --- Ranking and navigation ---
-def rank_dog(choice):
+def make_choice(choice):
+    """Store the choice temporarily to be applied after rerun."""
+    st.session_state.pending_choice = choice
+
+# Apply pending choice if exists
+if st.session_state.pending_choice:
     dog_id = st.session_state.dogs[st.session_state.index]["id"]
-    st.session_state.rankings[dog_id] = choice
-    # Only increment if not at the last dog
+    st.session_state.rankings[dog_id] = st.session_state.pending_choice
+    st.session_state.pending_choice = None
     if st.session_state.index < len(st.session_state.dogs) - 1:
         st.session_state.index += 1
 
@@ -51,13 +58,13 @@ if st.session_state.dogs:
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("❌ No", key=f"no_{st.session_state.index}"):
-            rank_dog("no")
+            make_choice("no")
     with col2:
         if st.button("🤔 Maybe", key=f"maybe_{st.session_state.index}"):
-            rank_dog("maybe")
+            make_choice("maybe")
     with col3:
         if st.button("✅ Yes", key=f"yes_{st.session_state.index}"):
-            rank_dog("yes")
+            make_choice("yes")
 
     # Navigation arrows
     col_left, col_mid, col_right = st.columns([1, 4, 1])
