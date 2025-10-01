@@ -30,16 +30,37 @@ st.markdown("""
         color: #333;
     }
     .stButton > button {
-        width: 100%;
-        height: 60px;
-        font-size: 1.5rem;
+        height: 50px;
+        font-size: 1.1rem;
         border-radius: 10px;
         font-weight: bold;
     }
-    .nav-button > button {
-        width: 100%;
-        height: 50px;
+    .circle-button {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: none;
         font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        margin: 10px auto;
+        display: block;
+        transition: transform 0.2s;
+    }
+    .circle-button:hover {
+        transform: scale(1.05);
+    }
+    .circle-yes {
+        background-color: #90EE90;
+        color: #006400;
+    }
+    .circle-maybe {
+        background-color: #FFD700;
+        color: #8B6914;
+    }
+    .circle-no {
+        background-color: #FFB6C1;
+        color: #8B0000;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -91,31 +112,62 @@ if st.session_state.dogs:
     dog = st.session_state.dogs[st.session_state.index]
     dog_id = dog["id"]
     
-    # Create two-column layout
-    col_left, col_right = st.columns([1, 1], gap="large")
+    # Create three-column layout (left: image+nav, middle: buttons, right: info)
+    col_left, col_middle, col_right = st.columns([2, 1, 2], gap="medium")
     
     with col_left:
-        # Dog image
-        st.image(dog["photo"], use_container_width=True)
-        
-        # Navigation arrows below image
-        nav_col1, nav_col2, nav_col3 = st.columns([1, 2, 1])
+        # Navigation arrows and image
+        nav_col1, nav_col2, nav_col3 = st.columns([1, 8, 1])
         with nav_col1:
-            st.markdown('<div class="nav-button">', unsafe_allow_html=True)
-            if st.button("⬅️", key="prev", disabled=st.session_state.index == 0, use_container_width=True):
+            st.markdown('<div style="padding-top: 200px;">', unsafe_allow_html=True)
+            if st.button("⬅️", key="prev", disabled=st.session_state.index == 0):
                 prev_dog()
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
         
         with nav_col2:
-            st.markdown(f"<center style='padding-top: 10px;'>Dog {st.session_state.index + 1} of {len(st.session_state.dogs)}</center>", unsafe_allow_html=True)
+            st.image(dog["photo"], use_container_width=True)
         
         with nav_col3:
-            st.markdown('<div class="nav-button">', unsafe_allow_html=True)
-            if st.button("➡️", key="next", disabled=st.session_state.index >= len(st.session_state.dogs) - 1, use_container_width=True):
+            st.markdown('<div style="padding-top: 200px;">', unsafe_allow_html=True)
+            if st.button("➡️", key="next", disabled=st.session_state.index >= len(st.session_state.dogs) - 1):
                 next_dog()
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown(f"<center>Dog {st.session_state.index + 1} of {len(st.session_state.dogs)}</center>", unsafe_allow_html=True)
+    
+    with col_middle:
+        # Vertically stacked circular buttons in the middle
+        st.markdown("<div style='padding-top: 150px;'>", unsafe_allow_html=True)
+        
+        # Yes button
+        st.markdown("""
+            <div style='text-align: center; margin-bottom: 20px;'>
+        """, unsafe_allow_html=True)
+        if st.button("✓\nYes", key=f"yes_{dog_id}", use_container_width=True, type="primary"):
+            rank_dog("yes")
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Maybe button
+        st.markdown("""
+            <div style='text-align: center; margin-bottom: 20px;'>
+        """, unsafe_allow_html=True)
+        if st.button("?\nMaybe", key=f"maybe_{dog_id}", use_container_width=True, type="secondary"):
+            rank_dog("maybe")
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # No button
+        st.markdown("""
+            <div style='text-align: center; margin-bottom: 20px;'>
+        """, unsafe_allow_html=True)
+        if st.button("✗\nNo", key=f"no_{dog_id}", use_container_width=True, type="secondary"):
+            rank_dog("no")
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     
     with col_right:
         # Dog name
@@ -150,26 +202,6 @@ if st.session_state.dogs:
         if st.session_state.show_description:
             with st.expander("Full Description", expanded=True):
                 st.write(dog["description"])
-        
-        st.markdown("---")
-        
-        # Ranking buttons (traffic light style)
-        rank_col1, rank_col2, rank_col3 = st.columns(3)
-        
-        with rank_col1:
-            if st.button("🔴 No", key=f"no_{dog_id}", type="secondary"):
-                rank_dog("no")
-                st.rerun()
-        
-        with rank_col2:
-            if st.button("🟡 Maybe", key=f"maybe_{dog_id}", type="secondary"):
-                rank_dog("maybe")
-                st.rerun()
-        
-        with rank_col3:
-            if st.button("🟢 Yes", key=f"yes_{dog_id}", type="primary"):
-                rank_dog("yes")
-                st.rerun()
         
         # Link to Petfinder
         st.markdown(f"[View full profile on Petfinder →]({dog['url']})")
