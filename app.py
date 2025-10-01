@@ -1,35 +1,16 @@
 import streamlit as st
 
-# --- Demo Data (replace with PetFinder API later) ---
-dogs = [
-    {
-        "id": 1,
-        "name": "Rockwell",
-        "age": "Baby",
-        "gender": "Boy",
-        "breed": ["Pit Bull Terrier", "Mix"],
-        "size": "Small",
-        "status": "Adoptable",
-        "description": """Hi, I’m Rockwell, and I’m bursting with energy, joy, and goofy charm!
-I’m the kind of pup who’s always ready for action, whether it’s chasing a ball, exploring new places, or inventing silly games to keep us laughing. Life with me will never be boring. I bring excitement and fun to every moment.
 
-Because I’m such a lively guy, I’ll do best with someone who can match my enthusiasm and help guide me with a little basic training. I’m still learning, but with patience and structure, I’ll shine. Right now, my energy might be a bit too much for small children, though there are no age restrictions: I just need a family who understands my playful spirit.
+from api_service import get_token, get_dogs
 
-I do need to be the only dog in the home, but that just means I’ll be free to give you all my love, attention, and endless tail wags. If you’re looking for an adventure buddy and a loyal best friend who’s always on the go, I’m your guy!""",
-        "photo": "https://dl5zpyw5k3jeb.cloudfront.net/photos/pets/78348145/1/?bust=1737910576&width=600"
-    },
-    {
-        "id": 2,
-        "name": "Bella",
-        "age": "Young",
-        "gender": "Girl",
-        "breed": ["Labrador Retriever"],
-        "size": "Medium",
-        "status": "Adoptable",
-        "description": "Bella is a sweet, playful lab who loves the outdoors and snuggling after long walks.",
-        "photo": "https://placedog.net/500/400?id=43"
-    }
-]
+# Fetch real dogs
+if "dogs" not in st.session_state:
+    token = get_token()
+    st.session_state.dogs = get_dogs(token, limit=10)
+
+dogs = st.session_state.dogs
+dog = dogs[st.session_state.dog_index]
+
 
 # --- Track state ---
 if "dog_index" not in st.session_state:
