@@ -39,7 +39,8 @@ def next_dog():
 # --- Display current dog ---
 if st.session_state.dogs:
     dog = st.session_state.dogs[st.session_state.index]
-
+    dog_id = dog["id"]
+    
     st.image(dog["photo"], width=350)
     st.subheader(dog["name"])
     st.write(f"**Breed:** {dog['breed']}")
@@ -48,29 +49,33 @@ if st.session_state.dogs:
     st.write(dog["description"])
     st.markdown(f"[View on Petfinder →]({dog['url']})")
 
-    # Ranking buttons with unique keys
+    # Ranking buttons with stable keys based on dog_id (not index)
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("❌ No", key=f"no_{st.session_state.index}"):
+        if st.button("❌ No", key=f"no_{dog_id}"):
             rank_dog("no")
+            st.rerun()
     with col2:
-        if st.button("🤔 Maybe", key=f"maybe_{st.session_state.index}"):
+        if st.button("🤔 Maybe", key=f"maybe_{dog_id}"):
             rank_dog("maybe")
+            st.rerun()
     with col3:
-        if st.button("✅ Yes", key=f"yes_{st.session_state.index}"):
+        if st.button("✅ Yes", key=f"yes_{dog_id}"):
             rank_dog("yes")
+            st.rerun()
 
     # Navigation arrows
     col_left, col_mid, col_right = st.columns([1, 4, 1])
     with col_left:
-        if st.button("⬅️ Prev", key="prev"):
+        if st.button("⬅️ Prev", key="prev", disabled=st.session_state.index == 0):
             prev_dog()
+            st.rerun()
     with col_right:
-        if st.button("➡️ Next", key="next"):
+        if st.button("➡️ Next", key="next", disabled=st.session_state.index >= len(st.session_state.dogs) - 1):
             next_dog()
+            st.rerun()
 
     st.write(f"Viewing dog {st.session_state.index + 1} of {len(st.session_state.dogs)}")
-
 else:
     st.warning("No dogs found. Try refreshing or check your API credentials.")
 
@@ -78,7 +83,9 @@ else:
 st.sidebar.header("📋 Your Choices")
 if st.session_state.rankings:
     for dog_id, choice in st.session_state.rankings.items():
-        dog = next(d for d in st.session_state.dogs if d["id"] == dog_id)
-        st.sidebar.write(f"{dog['name']} → {choice}")
+        dog = next((d for d in st.session_state.dogs if d["id"] == dog_id), None)
+        if dog:
+            emoji = {"yes": "✅", "maybe": "🤔", "no": "❌"}.get(choice, "")
+            st.sidebar.write(f"{emoji} {dog['name']}")
 else:
     st.sidebar.write("No choices yet. Start swiping!")
