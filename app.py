@@ -30,6 +30,7 @@ def prev_dog():
         st.session_state.index -= 1
 
 def rank_dog(choice):
+    """Record choice for current dog, then move to next."""
     current_dog = st.session_state.dogs[st.session_state.index]
     st.session_state.rankings[current_dog["id"]] = choice
     next_dog()
@@ -49,22 +50,22 @@ if st.session_state.dogs:
     # Ranking buttons
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("❌ No", use_container_width=True):
+        if st.button("❌ No", key=f"no_{st.session_state.index}", use_container_width=True):
             rank_dog("no")
     with col2:
-        if st.button("🤔 Maybe", use_container_width=True):
+        if st.button("🤔 Maybe", key=f"maybe_{st.session_state.index}", use_container_width=True):
             rank_dog("maybe")
     with col3:
-        if st.button("✅ Yes", use_container_width=True):
+        if st.button("✅ Yes", key=f"yes_{st.session_state.index}", use_container_width=True):
             rank_dog("yes")
 
     # Navigation arrows
     col_left, col_mid, col_right = st.columns([1, 4, 1])
     with col_left:
-        if st.button("⬅️ Prev"):
+        if st.button("⬅️ Prev", key=f"prev_{st.session_state.index}"):
             prev_dog()
     with col_right:
-        if st.button("➡️ Next"):
+        if st.button("➡️ Next", key=f"next_{st.session_state.index}"):
             next_dog()
 
     st.write(f"Viewing dog {st.session_state.index+1} of {len(st.session_state.dogs)}")
@@ -72,9 +73,10 @@ if st.session_state.dogs:
 else:
     st.warning("No dogs found. Try refreshing or check your API credentials.")
 
-# --- Saved rankings section ---
+# --- Saved rankings section (sidebar) ---
 st.sidebar.header("📋 Your Choices")
 if st.session_state.rankings:
+    # Display only dogs that already have a ranking
     for dog_id, choice in st.session_state.rankings.items():
         dog = next(d for d in st.session_state.dogs if d["id"] == dog_id)
         st.sidebar.write(f"{dog['name']} → {choice}")
