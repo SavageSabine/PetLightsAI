@@ -1,67 +1,82 @@
+# app.py
 import streamlit as st
+from api_service import get_token, fetch_dogs
 
+st.set_page_config(page_title="PetLights AI", page_icon="🐶", layout="centered")
 
+st.title("🐾 PetLights AI - Find Your Perfect Dog")
 
-from api_service import get_token
+# --- Session state setup ---
+if "dogs" not in st.session_state:
+    st.session_state.dogs = []
+if "index" not in st.session_state:
+    st.session_state.index = 0
+if "rankings" not in st.session_state:
+    st.session_state.rankings = {}  # {dog_id: "yes/maybe/no"}
 
-token = get_token()
-if token is None:
-    st.stop()  # Stop the app if auth failed
+# --- Load dogs ---
+if not st.session_state.dogs:
+    token = get_token()
+    if token:
+        st.session_state.dogs = fetch_dogs(token, location="85004", limit=10)
 
+# --- Navigation functions ---
+def next_dog():
+    if st.session_state.index < len(st.session_state.dogs) - 1:
+        st.session_state.index += 1
 
-# --- UI Layout ---
-st.set_page_config(page_title="Pet Lights AI", page_icon="🐶", layout="centered")
+def prev_dog():
+    if st.session_state.index > 0:
+        st.session_state.index -= 1
 
-st.title("🐾 Pet Lights AI")
+def rank_dog(choice):
+    current_dog = st.session_state.dogs[st.session_state.index]
+    st.session_state.rankings[current_dog["id"]] = choice
+    next_dog()
 
-col_left, col_center, col_right = st.columns([1, 3, 1])
+# --- Display current dog ---
+if st.session_state.dogs:
+    dog = st.session_state.dogs[st.session_state.index]
 
-with col_center:
-    # Dog card
     st.image(dog["photo"], width=350)
     st.subheader(dog["name"])
+    st.write(f"**Breed:** {dog['breed']}")
+    st.write(f"**Age:** {dog['age']}")
+    st.write(f"**Gender:** {dog['gender']}")
+    st.write(dog["description"])
+    st.markdown(f"[View on Petfinder →]({dog['url']})")
 
-    st.markdown(f"**Animal:** Dog")
-    st.markdown(f"**Age:** {dog['age']}")
-    st.markdown(f"**Gender:** {dog['gender']}")
+    # Ranking buttons
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("❌ No", use_container_width=True):
+            rank_dog("no")
+    with col2:
+        if st.button("🤔 Maybe", use_container_width=True):
+            rank_dog("maybe")
+    with col3:
+        if st.button("✅ Yes", use_container_width=True):
+            rank_dog("yes")
 
-    # Breed expandable if multiple
-    if len(dog["breed"]) > 1:
-        with st.expander("Breed Info"):
-            st.markdown(", ".join(dog["breed"]))
-    else:
-        st.markdown(f"**Breed:** {dog['breed'][0]}")
+    # Navigation arrows
+    col_left, col_mid, col_right = st.columns([1, 4, 1])
+    with col_left:
+        if st.button("⬅️ Prev"):
+            prev_dog()
+    with col_right:
+        if st.button("➡️ Next"):
+            next_dog()
 
-    st.markdown(f"**Size:** {dog['size']}")
-    st.markdown(f"**Status:** {dog['status']}")
+    st.write(f"Viewing dog {st.session_state.index+1} of {len(st.session_state.dogs)}")
 
-    # Description preview with popup
-    short_desc = dog["description"][:120] + "..."
-    with st.expander("Read Full Description"):
-        st.write(dog["description"])
-    st.caption(short_desc)
+else:
+    st.warning("No dogs found. Try refreshing or check your API credentials.")
 
-    # Stoplight buttons
-    col_yes, col_maybe, col_no = st.columns(3)
-    with col_yes:
-        if st.button("🟢 Yes"):
-            st.session_state.choices[dog["id"]] = "yes"
-    with col_maybe:
-        if st.button("🟡 Maybe"):
-            st.session_state.choices[dog["id"]] = "maybe"
-    with col_no:
-        if st.button("🔴 No"):
-            st.session_state.choices[dog["id"]] = "no"
-
-# --- Navigation Arrows ---
-with col_left:
-    if st.button("⬅️"):
-        st.session_state.dog_index = (st.session_state.dog_index - 1) % len(dogs)
-with col_right:
-    if st.button("➡️"):
-        st.session_state.dog_index = (st.session_state.dog_index + 1) % len(dogs)
-
-# --- User Decisions ---
-st.divider()
-st.subheader("Your Choices")
-st.json(st.session_state.choices)
+# --- Saved rankings section ---
+st.sidebar.header("📋 Your Choices")
+if st.session_state.rankings:
+    for dog_id, choice in st.session_state.rankings.items():
+        dog = next(d for d in st.session_state.dogs if d["id"] == dog_id)
+        st.sidebar.write(f"{dog['name']} → {choice}")
+else:
+    st.sidebar.write("No choices yet. Start swiping!")
